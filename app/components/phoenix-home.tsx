@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   motion,
   useReducedMotion,
@@ -102,7 +104,7 @@ const services = [
   {
     title: "Solutions industrielles",
     text: "Répondre aux besoins techniques des entreprises et sites industriels.",
-    img: image("photo-1581093458791-9d42cc0300c8"),
+    img: image("photo-1565793298595-6a879b1d9492"),
     icon: Factory,
   },
 ];
@@ -190,6 +192,8 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
+gsap.registerPlugin(ScrollTrigger);
+
 function SectionIntro({
   label,
   title,
@@ -257,6 +261,9 @@ export default function PhoenixHome() {
   const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
   const heroRef = useRef<HTMLElement>(null);
+  const aproposRef = useRef<HTMLElement>(null);
+  const aproposViewportRef = useRef<HTMLDivElement>(null);
+  const aproposTrackRef = useRef<HTMLDivElement>(null);
   const processRef = useRef<HTMLElement>(null);
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
@@ -269,6 +276,7 @@ export default function PhoenixHome() {
   const heroImageY = useTransform(heroProgress, [0, 1], ["0%", "12%"]);
   const heroTextY = useTransform(heroProgress, [0, 1], ["0%", "-8%"]);
   const processX = useTransform(processProgress, [0, 1], ["6%", "-26%"]);
+  const audienceRotations = [-4, 3.5, -3, 3, -2.5];
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -278,6 +286,7 @@ export default function PhoenixHome() {
       smoothWheel: true,
       wheelMultiplier: 0.85,
     });
+    lenis.on("scroll", ScrollTrigger.update);
 
     let frame = 0;
     const raf = (time: number) => {
@@ -299,8 +308,44 @@ export default function PhoenixHome() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const section = aproposRef.current;
+    const viewport = aproposViewportRef.current;
+    const track = aproposTrackRef.current;
+
+    if (reduceMotion || !section || !viewport || !track) return;
+
+    const media = gsap.matchMedia();
+    const context = gsap.context(() => {
+      media.add("(min-width: 1024px)", () => {
+        const getDistance = () =>
+          Math.max(track.scrollWidth - viewport.clientWidth, 0);
+
+        gsap.set(track, { x: 0 });
+
+        gsap.to(track, {
+          x: () => -getDistance(),
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            pin: true,
+            scrub: 0.85,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            end: () => `+=${getDistance()}`,
+          },
+        });
+      });
+    }, section);
+
+    return () => {
+      media.revert();
+      context.revert();
+    };
+  }, [reduceMotion]);
+
   return (
-    <div className="min-h-screen overflow-hidden bg-[#f7f9fc] text-[#091525]">
+    <div className="min-h-screen overflow-x-hidden bg-[#f7f9fc] text-[#091525]">
       <header
         className={`fixed left-0 top-0 z-50 w-full transition-all duration-300 ${
           scrolled
@@ -377,10 +422,10 @@ export default function PhoenixHome() {
               variants={fadeUp}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             >
-              <p className="mb-5 inline-flex rounded-full border border-[#c8d5e5] bg-white/70 px-4 py-2 text-xs font-semibold uppercase text-[#0a5bd8]">
+              <p className="mb-5 inline-flex rounded-full bg-white/40 px-4 py-2 text-xs font-semibold uppercase text-[#0a5bd8]">
                 Phoenix TechnoConcept Multicarte
               </p>
-              <h1 className="font-display max-w-5xl text-5xl font-semibold leading-[1.02] text-[#07172d] md:text-7xl xl:text-[5.9rem]">
+              <h1 className="font-display max-w-5xl text-5xl font-semibold leading-[1.02] text-[#07172d] md:text-7xl xl:text-[5rem]">
                 Construire l’avenir avec précision, confiance et ambition.
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-[#4b5563] md:text-xl">
@@ -429,39 +474,70 @@ export default function PhoenixHome() {
           </div>
         </section>
 
-        <section id="apropos" className="px-5 py-24 md:px-8 md:py-32">
+        <section
+          id="apropos"
+          ref={aproposRef}
+          className="bg-white px-5 pb-40 pt-24 md:px-8 md:pb-52 md:pt-32 lg:pb-64"
+        >
           <div className="mx-auto max-w-7xl">
             <SectionIntro
               label="Pour qui"
               title="Un partenaire pour chaque projet"
               text="Des réponses ciblées pour les réalités des maîtres d’ouvrage, des entreprises et des sites techniques."
             />
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              {audiences.map(({ title, text, icon: Icon }, index) => (
-                <motion.article
-                  key={title}
-                  className="rounded-[1.75rem] border border-[#dfe6f0] bg-white p-6 transition hover:-translate-y-1 hover:border-[#b8c9e0]"
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, margin: "-8% 0px" }}
-                  variants={fadeUp}
-                  transition={{
-                    duration: 0.55,
-                    delay: index * 0.04,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#0a5bd8]">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold text-[#07172d]">
-                    {title}
-                  </h3>
-                  <p className="mt-4 text-sm leading-7 text-[#5c6675]">
-                    {text}
-                  </p>
-                </motion.article>
-              ))}
+            <div
+              ref={aproposViewportRef}
+              className="overflow-visible pb-20 lg:pb-36"
+            >
+              <motion.div
+                ref={aproposTrackRef}
+                className="grid gap-5 md:grid-cols-2 lg:flex lg:w-max lg:items-stretch lg:gap-8"
+              >
+                {audiences.map(({ title, text, icon: Icon }, index) => (
+                  <motion.article
+                    key={title}
+                    className="relative min-h-[380px] rounded-[1.75rem] border border-[#dfe6f0] p-8 shadow-[0_24px_70px_rgba(7,23,45,0.08)] transition-colors hover:border-[#b8c9e0] md:min-h-[420px] lg:w-[min(72vw,640px)] lg:p-10"
+                    initial={{
+                      opacity: 0,
+                      y: 64,
+                      rotate: reduceMotion ? 0 : audienceRotations[index] * 1.8,
+                      scale: 0.96,
+                    }}
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                      rotate: reduceMotion ? 0 : audienceRotations[index],
+                      scale: 1,
+                    }}
+                    whileHover={{
+                      y: -10,
+                      rotate: reduceMotion
+                        ? 0
+                        : audienceRotations[index] * 0.55,
+                      scale: 1.015,
+                    }}
+                    viewport={{ once: true, margin: "-8% 0px" }}
+                    transition={{
+                      duration: 0.7,
+                      delay: index * 0.08,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                  >
+                    <span className="absolute right-8 top-7 font-display text-7xl font-semibold leading-none text-[#eef4ff] lg:text-8xl">
+                      0{index + 1}
+                    </span>
+                    <div className="relative mb-16 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eef4ff] text-[#0a5bd8]">
+                      <Icon className="h-7 w-7" aria-hidden="true" />
+                    </div>
+                    <h3 className="relative max-w-sm font-display text-3xl font-semibold leading-tight text-[#07172d] md:text-4xl">
+                      {title}
+                    </h3>
+                    <p className="relative mt-6 max-w-md text-base leading-8 text-[#5c6675] md:text-lg">
+                      {text}
+                    </p>
+                  </motion.article>
+                ))}
+              </motion.div>
             </div>
           </div>
         </section>
@@ -660,10 +736,16 @@ export default function PhoenixHome() {
                 industrielles : discutons de vos objectifs.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <AnchorButton href="mailto:contact@phoenixtechnoconcepts.com" variant="light">
+                <AnchorButton
+                  href="mailto:contact@phoenixtechnoconcepts.com"
+                  variant="light"
+                >
                   Demander un devis
                 </AnchorButton>
-                <AnchorButton href="mailto:contact@phoenixtechnoconcepts.com" variant="secondary">
+                <AnchorButton
+                  href="mailto:contact@phoenixtechnoconcepts.com"
+                  variant="secondary"
+                >
                   Nous contacter
                 </AnchorButton>
               </div>
@@ -694,7 +776,11 @@ export default function PhoenixHome() {
             </h3>
             <div className="mt-5 grid gap-3 text-sm text-[#5c6675]">
               {services.slice(0, 5).map((service) => (
-                <a key={service.title} href="#services" className="hover:text-[#0a5bd8]">
+                <a
+                  key={service.title}
+                  href="#services"
+                  className="hover:text-[#0a5bd8]"
+                >
                   {service.title}
                 </a>
               ))}
@@ -705,7 +791,10 @@ export default function PhoenixHome() {
               Contact
             </h3>
             <div className="mt-5 grid gap-3 text-sm text-[#5c6675]">
-              <a href="mailto:contact@phoenixtechnoconcepts.com" className="hover:text-[#0a5bd8]">
+              <a
+                href="mailto:contact@phoenixtechnoconcepts.com"
+                className="hover:text-[#0a5bd8]"
+              >
                 contact@phoenixtechnoconcepts.com
               </a>
               <span>Adresse à compléter</span>
